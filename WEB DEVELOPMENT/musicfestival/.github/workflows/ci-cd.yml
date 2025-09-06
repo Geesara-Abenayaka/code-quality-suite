@@ -1,0 +1,83 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    # Frontend build and test
+    - name: Install frontend dependencies
+      run: |
+        cd "WEB DEVELOPMENT/musicfestival"
+        npm install
+
+    - name: Build frontend
+      run: |
+        cd "WEB DEVELOPMENT/musicfestival"
+        npm run build
+
+    - name: Run frontend tests
+      run: |
+        cd "WEB DEVELOPMENT/musicfestival"
+        npm test
+
+    # Backend build and test
+    - name: Install backend dependencies
+      run: |
+        cd "WEB DEVELOPMENT BACKEND"
+        npm install
+
+    - name: Run backend unit tests
+      run: |
+        cd "WEB DEVELOPMENT BACKEND"
+        npm test
+
+    # Selenium tests
+    - name: Install Chrome for Selenium
+      uses: browser-actions/setup-chrome@latest
+
+    - name: Install Selenium test dependencies
+      run: |
+        cd "WEB DEVELOPMENT/musicfestival/selenium-tests"
+        npm install
+
+    - name: Start backend server
+      run: |
+        cd "WEB DEVELOPMENT BACKEND"
+        npm start &
+        sleep 10
+
+    - name: Start frontend server
+      run: |
+        cd "WEB DEVELOPMENT/musicfestival"
+        npm run preview &
+        sleep 10
+
+    - name: Run Selenium tests
+      run: |
+        cd "WEB DEVELOPMENT/musicfestival/selenium-tests"
+        npm test
